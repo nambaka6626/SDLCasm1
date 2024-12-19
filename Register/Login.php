@@ -1,137 +1,188 @@
 <?php
 include "Connect.php";
 
-$username = $password ="";
+$username = $password = "";
 $username_err = $password_err = "";
 
-if($_SERVER["REQUEST_METHOD"]=="POST"){
-    if(empty(trim($_POST["username"]))){
-        $username_err ="Please enter username";
-    }else{
-        $username=trim($_POST["username"]);
-    }
-    
-    if(empty(trim($_POST["password"]))){
-       
-        $password_err ="Please enter password";
-    }else{
-        $password=trim($_POST["password"]);
-    }
-    
-    if (empty($username_err) && empty($password_err)) {
-      
-      // Prepare a select statement
-      $sql = "SELECT userID, username, password FROM users WHERE username = ?";
-
-      // Execute the prepared statement
-      if ($stmt = mysqli_prepare($conn, $sql)) {
-        // Tiếp tục xử lý
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (empty(trim($_POST["username"]))) {
+        $username_err = "Please enter your username.";
     } else {
-        // In ra lỗi để xem chi tiết
-        echo "Error preparing query: " . mysqli_error($conn);
+        $username = trim($_POST["username"]);
     }
-    
-      if ($stmt) 
-      {
-          // Bind variables to the prepared statement as parameters
-          mysqli_stmt_bind_param($stmt, "s", $param_username);
 
-          // Set parameters
-          $param_username = $username;
-          // Execute the prepared statement
-          if (mysqli_stmt_execute($stmt)) {
-           // Store result
-              mysqli_stmt_store_result($stmt);
+    if (empty(trim($_POST["password"]))) {
+        $password_err = "Please enter your password.";
+    } else {
+        $password = trim($_POST["password"]);
+    }
 
-              // Check if username exists, then verify password
-              if (mysqli_stmt_num_rows($stmt) == 1) {
-                  //Bind result variables
-                  mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password);
+    if (empty($username_err) && empty($password_err)) {
+        $sql = "SELECT userID, username, password FROM users WHERE username = ?";
 
-                  // Fetch the results
-                  if (mysqli_stmt_fetch($stmt)) {
-                      // Verify the password with the hashed password from the database
-                      if ($password == $hashed_password) {
-                          // Redirect user to welcome page
-                          header("location: main.php");
-                          exit();
-                      } else {
-                          // Display an error message if password is not valid
-                          $password_err = "The password you entered was not valid.";
-                      }
-                  }
-              } else {
-                  // Display an error message if username doesn't exist
-                  $username_err = "No account found with that username.";
-              }
-          } else {
-              echo "Oops! Something went wrong. Please try again later.";
-          }
+        if ($stmt = mysqli_prepare($conn, $sql)) {
+            mysqli_stmt_bind_param($stmt, "s", $param_username);
+            $param_username = $username;
 
-          // Close statement
-          mysqli_stmt_close($stmt);
-      }
-  }
+            if (mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_store_result($stmt);
+
+                if (mysqli_stmt_num_rows($stmt) == 1) {
+                    mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password);
+
+                    if (mysqli_stmt_fetch($stmt)) {
+                        if (password_verify($password, $hashed_password)) {
+                            header("location: main.php");
+                            exit();
+                        } else {
+                            $password_err = "The password you entered is incorrect.";
+                        }
+                    }
+                } else {
+                    $username_err = "No account found with that username.";
+                }
+            } else {
+                echo "Something went wrong. Please try again later.";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+    mysqli_close($conn);
 }
-// Close connection
-mysqli_close($conn);
-
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Bootstrap Example</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <title>Login</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #67b26f, #4ca2cd); 
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+    width: 100%;
+    max-width: 380px;
+    transition: all 0.3s ease;
+}
+
+.container:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+h2 {
+    font-size: 28px;
+    color: #333;
+    text-align: center;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    outline: none;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #67b26f;
+    box-shadow: 0 0 8px rgba(103, 178, 111, 0.5);
+}
+
+.text-danger {
+    font-size: 14px;
+    color: #d9534f;
+    margin-top: 5px;
+}
+
+.btn-success {
+    background-color: #67b26f; 
+    border: none;
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    width: 100%;
+}
+
+.btn-success:hover {
+    background-color: #4ca2cd; 
+    transform: translateY(-3px); 
+}
+
+.btn-success:active {
+    background-color: #4ca2cd; 
+    transform: translateY(1px); 
+}
+
+p {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+p a {
+    color: #67b26f;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+p a:hover {
+    text-decoration: underline;
+}
+
+    </style>
 </head>
 <body>
-
-<div class="container">
-  <h2 style="display: flex; justify-content: center;">Login</h2>
-  
-  <form action="", method="post">
-
-  <div class="form-group">
-      <label for="name">Name:</label>
-      <input type="name" class="form-control" id="name" name="username" required>
-      <!-- in loi khi ko nhap vao username-->
-      <span class="text-danger"><?php echo $username_err; ?></span>
+    <div class="container">
+        <h2>Login</h2>
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="username" class="form-control" id="username" value="<?php echo $username; ?>">
+                <span class="text-danger"><?php echo $username_err; ?></span>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" name="password" class="form-control" id="password">
+                <span class="text-danger"><?php echo $password_err; ?></span>
+            </div>
+            <button type="submit" class="btn btn-success">Login</button>
+            <p>Don't have an account? <a href="dangky.php">Sign up now</a>.</p>
+        </form>
     </div>
-
-    <!-- <div class="form-group">
-      <label for="mail">Mail:</label>
-      <input type="email" class="form-control" id="email" name="email">
-    </div> -->
-    
-    <div class="form-group">
-      <label for="password">Password:</label>
-      <input type="password" class="form-control" id="password" name="password" required>
-
-      <span class="text-danger"><?php echo $password_err; ?></span>
-    </div>
-<!-- 
-    <div class="form-group">
-      <label for="confirm">Confirm Password:</label>
-      <input type="password" class="form-control" id="password" name="password">
-    </div>
-
-    <div class="form-group">
-      <label for="address">Address:</label>
-      <input type="text" class="form-control" id="address" name="address">
-    </div>
-
-    <div class="checkbox">
-      <label><input type="checkbox" name="remember"> Remember me</label>
-    </div> -->
-
-    <button type="submit" class="btn btn-success">Submit</button>
-    <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
-  </form>
-</div>
-
 </body>
 </html>
